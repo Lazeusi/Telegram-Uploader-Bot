@@ -1,11 +1,42 @@
-echo "__pycache__/
-.env
-*.pyc
-*.pyo
-*.pyd
+# === Python ===
+pycache/
+*.py[cod]
+*$py.class
+
+# === Virtual Environments ===
 venv/
-.idea/
+env/
+.venv/
+
+# === Environment Variables ===
+.env
+
+# === IDEs & Editors ===
 .vscode/
-__pycache__/
-.env_local
-" > .gitignore
+.idea/
+*.swp
+*.swo
+
+# === Logs ===
+*.log
+logs/
+
+# === OS-specific ===
+.DS_Store
+Thumbs.db
+
+# === Cache ===
+.cache/
+*.sqlite3
+
+# === Test / Build ===
+build/
+dist/
+*.egg-info/
+
+# === Aiogram temp files ===
+*.session
+*.session-journal
+
+# === Misc ===
+*.bak
