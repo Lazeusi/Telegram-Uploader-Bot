@@ -13,10 +13,11 @@ class Channel:
             "added_at": datetime.now()
         }
         await cls.collection.insert_one(data)
-        
+    @classmethod
     async def remove(cls, channel_id: int):
         await cls.collection.delete_one({"channel_id": channel_id})
-        
+    
+    @classmethod
     async def get_all(cls):
         channels = []
         cursor = cls.collection.find({})

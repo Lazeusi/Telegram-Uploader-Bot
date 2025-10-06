@@ -1,4 +1,4 @@
-from src.keyboards.inline.channel import ch_kb
+from src.keyboards.inline.channel import ch_kb , cancel_add_kb
 from aiogram import Router , types , F , Bot
 from aiogram.fsm.state import StatesGroup , State
 from aiogram.fsm.context import FSMContext
@@ -14,9 +14,14 @@ class AddChannelState(StatesGroup):
     
 @router.callback_query(F.data == "add_channel")
 async def add_channel_callback_handler(callback_query: types.CallbackQuery , state: FSMContext):
-    await callback_query.message.answer("Please send the channel username or ID to add it.")
+    await callback_query.message.edit_text("Please send the channel username or ID to add it." , reply_markup= cancel_add_kb)
     await state.set_state(AddChannelState.waiting_for_channel)
     await callback_query.answer()  # Acknowledge the callback to remove the loading state
+    
+@router.callback_query(F.data == "cancel_add", AddChannelState.waiting_for_channel)
+async def cancel_add_callback_handler(callback: types.CallbackQuery , state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text("Channel addition has been cancelled.")
     
 @router.message(AddChannelState.waiting_for_channel)
 async def process_channel_input(message: types.Message , state: FSMContext , **kwargs):

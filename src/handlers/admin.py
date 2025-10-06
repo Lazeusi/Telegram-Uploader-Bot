@@ -7,6 +7,15 @@ from src.logger import logger
 
 router = Router()
 
+
+@router.message(Command("active_admin"))
+async def active_admin_handler(message: types.Message):
+    
+    coll = await Admin.all()
+    if not coll:
+        await Admin.add(message.from_user.id, message.from_user.username)
+    else:
+        return
 @router.message(Command("add_admin"))
 async def add_admin_handler(message: types.Message):
     # Check if the user is an admin
