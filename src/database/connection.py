@@ -7,6 +7,7 @@ class Database:
         self.db = self.client[settings.DB_NAME]
         
         self.users = self.db["users"]
+        self.admins = self.db["admins"]
         
     async def test_connection(self):
         try:

@@ -1,6 +1,6 @@
 from aiogram import Bot, Dispatcher
 import asyncio
-import logging
+
 
 from src.config import settings
 from src.database.connection import db
@@ -20,7 +20,7 @@ async def main():
     
 
 
-    logging.basicConfig(level=logging.INFO)
+
     await dp.start_polling(bot)
     print("Bot started!🚀")
     

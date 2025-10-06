@@ -26,6 +26,7 @@ class User:
     async def delete(cls , user_id : int):
         return await cls.collection.delete_one({"user_id" : user_id})
     
+
     @classmethod
     async def all(cls):
         # get all users
