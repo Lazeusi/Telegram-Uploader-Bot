@@ -9,6 +9,7 @@ class Database:
         self.users = self.db["users"]
         self.admins = self.db["admins"]
         self.files = self.db["files"]
+        self.channels = self.db["channels"]
         
     async def test_connection(self):
         try:
