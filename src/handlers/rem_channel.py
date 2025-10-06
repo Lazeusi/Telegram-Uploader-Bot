@@ -27,8 +27,8 @@ async def back_to_main_callback_handler(callback_query: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("channel_"))
 async def delete_channel_callback_handler(callback: types.CallbackQuery , state: FSMContext):
-    channel_id = int(callback.data.split("_")[1])
-    await state.update_data(channel_id=channel_id)
+    channel_id = str(callback.data.split("_")[1])
+    await state.update_data(identifier=channel_id)
     await state.set_state(RemoveChannelState.waiting_for_confirmation)
     await callback.message.edit_text("Are you sure you want to delete this channel?" , reply_markup= accept_kb)
     await callback.answer()  # Acknowledge the callback to remove the loading state
@@ -36,9 +36,9 @@ async def delete_channel_callback_handler(callback: types.CallbackQuery , state:
 @router.callback_query(F.data == "confirm_delete", RemoveChannelState.waiting_for_confirmation)
 async def confirm_delete_callback_handler(callback: types.CallbackQuery , state: FSMContext):
     data = await state.get_data()
-    channel_id = data.get("channel_id")
+    channel_id = data.get("identifier")
     if channel_id:
-        await Channel.remove(channel_id)
+        await Channel.delete(channel_id)
         await callback.message.edit_text("Channel has been removed successfully.")
     else:
         await callback.message.edit_text("No channel selected for deletion.")

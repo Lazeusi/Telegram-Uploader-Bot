@@ -1,46 +1,63 @@
-from src.keyboards.inline.channel import ch_kb , cancel_add_kb
-from aiogram import Router , types , F , Bot
-from aiogram.fsm.state import StatesGroup , State
+from aiogram import Router, types, F, Bot
+from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
+from src.keyboards.inline.channel import ch_kb, cancel_add_kb
 from src.database.models.channel import Channel
 from src.logger import logger
-
+import re
 
 router = Router()
 
 
 class AddChannelState(StatesGroup):
     waiting_for_channel = State()
-    
+    waiting_for_title = State()
+
+
 @router.callback_query(F.data == "add_channel")
-async def add_channel_callback_handler(callback_query: types.CallbackQuery , state: FSMContext):
-    await callback_query.message.edit_text("Please send the channel username or ID to add it." , reply_markup= cancel_add_kb)
+async def add_channel_callback_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.message.edit_text(
+        "Please send the channel or group username, ID, or invite link.",
+        reply_markup=cancel_add_kb
+    )
     await state.set_state(AddChannelState.waiting_for_channel)
-    await callback_query.answer()  # Acknowledge the callback to remove the loading state
-    
+    await callback_query.answer()
+
+
 @router.callback_query(F.data == "cancel_add", AddChannelState.waiting_for_channel)
-async def cancel_add_callback_handler(callback: types.CallbackQuery , state: FSMContext):
+async def cancel_add_callback_handler(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text("Channel addition has been cancelled.")
-    
+    await callback.message.edit_text("Channel or group addition has been cancelled.")
+
+
 @router.message(AddChannelState.waiting_for_channel)
-async def process_channel_input(message: types.Message , state: FSMContext , **kwargs):
-    bot= kwargs["bot"]
-    identifier = message.text.strip().lower()
+async def process_channel_input(message: types.Message, state: FSMContext):
+    identifier = message.text.strip()
     
-    try:
-        chat = await bot.get_chat(identifier)
-        if chat.type not in ["channel", "supergroup"]:
-            await message.reply("The provided ID/username does not belong to a channel or supergroup. Please try again.")
-            return
-        await Channel.add(
-            channel_id=chat.id,
-            title=chat.title,
-            channel_username=chat.username
-        )
-        await message.reply(f"Channel '{chat.title}' has been added successfully.")
-    except Exception as e:
-        await message.reply("Failed to add the channel. Please ensure the bot is an admin in the channel and the ID/username is correct.")
-        logger.error(f"Failed to add channel: {e} \n Channel ID: {identifier} \n User ID: {message.from_user.id}" , exc_info=True)
-        
-        
+    
+    if identifier.startswith("@"):
+        chat_type = "public"
+    elif "t.me" in identifier:
+        chat_type = "invite link"
+    elif identifier.lstrip("-").isdigit():
+        chat_type = "id"
+    else:
+        chat_type = "unknown"
+
+    await state.set_data({"identifier": identifier, "chat_type": chat_type})
+    
+    await state.set_state(AddChannelState.waiting_for_title)
+    await message.reply("Please provide a title for the channel or group.")
+    
+
+@router.message(AddChannelState.waiting_for_title)
+async def process_title_input(message: types.Message, state: FSMContext):
+    data = await state.get_data()
+    identifier = data["identifier"]
+    chat_type = data["chat_type"]
+    
+    title = message.text.strip()
+    
+    await Channel.add(identifier, title, chat_type)
+    await state.clear()
+    await message.reply("Channel or group has been added successfully.")

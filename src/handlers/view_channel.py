@@ -11,7 +11,7 @@ async def view_channels_callback_handler(callback_query: types.CallbackQuery):
     if not chan:
         await callback_query.message.edit_text("No channels found.")
         return
-    await callback_query.message.edit_text("Here are the channels you have added:" , reply_markup=await list_channels())
+    await callback_query.message.edit_text("Here are the channels/groups you have added:" , reply_markup=await list_channels())
 
 @router.callback_query(F.data == "back_to_main")
 async def back_to_main_callback_handler(callback_query: types.CallbackQuery):

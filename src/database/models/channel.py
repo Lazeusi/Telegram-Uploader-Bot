@@ -1,22 +1,18 @@
 from src.database.connection import db
-from datetime import datetime
+
 
 class Channel:
     collection = db.channels
     
-    @classmethod
-    async def add(cls, channel_id: int, title: str , channel_username: str = None):
+    @classmethod 
+    async def add(cls , identifier : str , title : str ,chat_type:str = "unknown"):
         data = {
-            "channel_id": channel_id,
-            "title": title,
-            "channel_username": channel_username,
-            "added_at": datetime.now()
+            "identifier" : identifier,
+            "title" : title,
+            "chat_type" : chat_type,
         }
         await cls.collection.insert_one(data)
-    @classmethod
-    async def remove(cls, channel_id: int):
-        await cls.collection.delete_one({"channel_id": channel_id})
-    
+        
     @classmethod
     async def get_all(cls):
         channels = []
@@ -24,3 +20,9 @@ class Channel:
         async for document in cursor:
             channels.append(document)
         return channels
+    
+    @classmethod
+    async def delete(cls , idensifier : str):
+        return await cls.collection.delete_one({"idensifier" : idensifier})
+    
+       
