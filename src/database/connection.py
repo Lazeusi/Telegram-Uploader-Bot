@@ -8,6 +8,7 @@ class Database:
         
         self.users = self.db["users"]
         self.admins = self.db["admins"]
+        self.files = self.db["files"]
         
     async def test_connection(self):
         try:
