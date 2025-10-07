@@ -5,6 +5,7 @@ from src.logger import logger
 from src.database.models.user import User
 
 
+
 class UserMiddleware(BaseMiddleware):
     async def __call__(self, handler, event : Message, data : dict):
         user_id = event.from_user.id

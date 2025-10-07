@@ -27,7 +27,8 @@ async def back_to_main_callback_handler(callback_query: types.CallbackQuery):
 
 @router.callback_query(F.data.startswith("channel_"))
 async def delete_channel_callback_handler(callback: types.CallbackQuery , state: FSMContext):
-    channel_id = str(callback.data.split("_")[1])
+    
+    channel_id = int(callback.data.split("_")[1])
     await state.update_data(identifier=channel_id)
     await state.set_state(RemoveChannelState.waiting_for_confirmation)
     await callback.message.edit_text("Are you sure you want to delete this channel?" , reply_markup= accept_kb)

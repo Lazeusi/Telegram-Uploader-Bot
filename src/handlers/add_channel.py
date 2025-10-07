@@ -1,63 +1,77 @@
-from aiogram import Router, types, F, Bot
+
+from aiogram import Router, types, F
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
-from src.keyboards.inline.channel import ch_kb, cancel_add_kb
 from src.database.models.channel import Channel
-from src.logger import logger
+from src.keyboards.inline.channel import cancel_add_kb
 import re
 
 router = Router()
 
-
-class AddChannelState(StatesGroup):
-    waiting_for_channel = State()
-    waiting_for_title = State()
+class AddChatState(StatesGroup):
+    waiting_for_identifier = State()
+    waiting_for_forward = State()
 
 
 @router.callback_query(F.data == "add_channel")
-async def add_channel_callback_handler(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.message.edit_text(
-        "Please send the channel or group username, ID, or invite link.",
+async def start_add_chat(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(
+        "Send the chat username, ID, or invite link to add it 👇" ,
         reply_markup=cancel_add_kb
     )
-    await state.set_state(AddChannelState.waiting_for_channel)
-    await callback_query.answer()
+    await state.set_state(AddChatState.waiting_for_identifier)
+    await callback.answer()
 
 
-@router.callback_query(F.data == "cancel_add", AddChannelState.waiting_for_channel)
-async def cancel_add_callback_handler(callback: types.CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "cancel_add")
+async def cancel_add_chat(callback: types.CallbackQuery, state: FSMContext):
     await state.clear()
-    await callback.message.edit_text("Channel or group addition has been cancelled.")
+    await callback.message.edit_text("❌ Chat addition cancelled.")
+    await callback.answer()
 
 
-@router.message(AddChannelState.waiting_for_channel)
-async def process_channel_input(message: types.Message, state: FSMContext):
+@router.message(AddChatState.waiting_for_identifier)
+async def process_chat_identifier(message: types.Message, state: FSMContext):
     identifier = message.text.strip()
-    
-    
+    bot = message.bot
+
+    # Public chat by username
     if identifier.startswith("@"):
-        chat_type = "public"
-    elif "t.me" in identifier:
-        chat_type = "invite link"
+        try:
+            chat = await bot.get_chat(identifier)
+            await Channel.add(identifier=chat.id, chat_type="public", title=chat.title)
+            await message.reply(f"✅ Chat added successfully:\n<b>Title:</b> {chat.title}\n<b>ID:</b> <code>{chat.id}</code>", parse_mode="HTML")
+            await state.clear()
+        except Exception:
+            await message.reply("❌ Failed to add public chat. Make sure the bot is admin and the username is correct.")
+    
+    # Private invite link
+    elif "t.me/+" in identifier or "joinchat" in identifier:
+        await state.update_data(pending_identifier=identifier)
+        await message.reply("⚠️ For private channels/groups, please forward a post from that chat so we can get the real ID.")
+        await state.set_state(AddChatState.waiting_for_forward)
+    
+    # Numeric ID
     elif identifier.lstrip("-").isdigit():
-        chat_type = "id"
+        chat_id = int(identifier)
+        try:
+            chat = await bot.get_chat(chat_id)
+            await Channel.add(identifier=chat.id, chat_type="id", title=chat.title)
+            await message.reply(f"✅ Chat added successfully:\n<b>Title:</b> {chat.title}\n<b>ID:</b> <code>{chat.id}</code>", parse_mode="HTML")
+            await state.clear()
+        except Exception:
+            await message.reply("❌ Failed to add chat with ID. Make sure the bot is admin in the chat.")
     else:
-        chat_type = "unknown"
+        await message.reply("❌ Invalid input. Please send username, numeric ID, or invite link.")
 
-    await state.set_data({"identifier": identifier, "chat_type": chat_type})
-    
-    await state.set_state(AddChannelState.waiting_for_title)
-    await message.reply("Please provide a title for the channel or group.")
-    
 
-@router.message(AddChannelState.waiting_for_title)
-async def process_title_input(message: types.Message, state: FSMContext):
-    data = await state.get_data()
-    identifier = data["identifier"]
-    chat_type = data["chat_type"]
-    
-    title = message.text.strip()
-    
-    await Channel.add(identifier, title, chat_type)
+@router.message(AddChatState.waiting_for_forward)
+async def process_forwarded_chat(message: types.Message, state: FSMContext):
+    if not message.forward_from_chat:
+        await message.reply("❌ No forwarded message detected. Please forward a post from the private chat.")
+        return
+
+    chat = message.forward_from_chat
+    await Channel.add(identifier=chat.id, chat_type="private", title=chat.title)
+    await message.reply(f"✅ Private chat added successfully:\n<b>Title:</b> {chat.title}\n<b>ID:</b> <code>{chat.id}</code>", parse_mode="HTML")
     await state.clear()
-    await message.reply("Channel or group has been added successfully.")

@@ -15,6 +15,8 @@ async def main():
     bot = Bot(token=settings.BOT_TOKEN)
     dp = Dispatcher()
     
+    
+
     await setup_routers(dp)
     await setup_middlewares(dp)
     
