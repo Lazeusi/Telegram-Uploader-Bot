@@ -6,7 +6,7 @@ from src.logger import logger
 
 router = Router()
 
-@router.message(F.content_type.in_({"photo" , "video" , "document"}))
+@router.message(F.content_type.in_({"photo" , "video" , "document"}) , F.chat.type("private"))
 async def upload_handler(message: types.Message , bot):
     
     user_id = message.from_user.id

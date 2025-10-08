@@ -1,6 +1,6 @@
 # src/routers/start_router.py
-from aiogram import Router, types
-from aiogram.filters import CommandStart
+from aiogram import Router, types , F
+from aiogram.filters import CommandStart , Command
 from aiogram.fsm.context import FSMContext
 from src.database.models.file import File
 from src.database.models.channel import Channel
@@ -125,3 +125,10 @@ async def joined_callback(callback: types.CallbackQuery, state: FSMContext, bot)
     except Exception as e:
         await bot.send_message(chat_id=user_id, text="Failed to retrieve the file. It might have been deleted.")
         logger.error(f"Failed to send file: {e}", exc_info=True)
+
+@router.message(Command("start") , F.chat.type("private"))
+async def simple_start_handler(message: types.Message):
+    """
+    Handle simple /start without payload.
+    """
+    await message.reply("Invalid usage. Please use a valid link to access media.")

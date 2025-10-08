@@ -6,7 +6,7 @@ from src.config import settings
 from src.database.connection import db
 from src.handlers import setup_routers
 from src.middleware import setup_middlewares
-
+import logging
 
 async def main():
     
@@ -15,7 +15,7 @@ async def main():
     bot = Bot(token=settings.BOT_TOKEN)
     dp = Dispatcher()
     
-    
+    logging.basicConfig(level=logging.INFO)
 
     await setup_routers(dp)
     await setup_middlewares(dp)
